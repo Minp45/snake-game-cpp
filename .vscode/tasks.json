@@ -23,7 +23,7 @@
             "osx": {
                 "args": [
                     "PROJECT_NAME=${fileBasenameNoExtension}",
-                    "OBJS=*.cpp",
+                    "OBJS=src/*.cpp",
                     "BUILD_MODE=DEBUG"
                 ]
             },
