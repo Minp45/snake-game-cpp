@@ -126,19 +126,27 @@ class Game
         Food food = Food(snake.body);
         bool running = true;
         int score = 0;
+        int bestScore = 0;
         Sound eatSound;
         Sound wallSound;
+        Music backGroundMusic;
+        bool gamePaused = true;  // Start the game in a paused state
+        bool gameStarted = false;  // Track if the game has started
+        double speed = 0.2;
 
         Game()
         {
-            InitAudioDevice();
+            InitAudioDevice(); // Initialize audio device
             eatSound = LoadSound("sounds/eat.mp3");
             wallSound = LoadSound("sounds/wall.mp3");
+            backGroundMusic = LoadMusicStream("sounds/happy_adveture.mp3");  // Load background music
         }
+        
         ~Game()
         {
             UnloadSound(eatSound);
             UnloadSound(wallSound);
+            UnloadMusicStream(backGroundMusic);  // Unload the music stream
             CloseAudioDevice();
         }
 
@@ -147,6 +155,12 @@ class Game
             food.Draw();
             snake.Draw();
         }
+        
+        void UpdateMusic()
+        {
+            UpdateMusicStream(backGroundMusic);  // Ensure the background music continues playing
+        }
+
         void Update()
         {
             if (running)
@@ -157,24 +171,27 @@ class Game
                 CheckCollisionWithTail();
             }
         }
+        
         void CheckCollisionWithFood()
         {
             if(Vector2Equals(snake.body[0], food.position))
             {
                 food.position = food.GenerateRandomPos(snake.body);
                 snake.addSegment = true;
-                score ++;
+                score++;
+
                 PlaySound(eatSound);
+
+                if (speed > 0.05)
+                {
+                    speed *= 0.95;  // Increase the game speed by reducing the interval
+                }
             }
         }
 
         void CheckCollisionWithEdges()
         {
-            if(snake.body[0].x == cellCount || snake.body[0].x == -1)
-            {
-                GameOver();
-            }
-            if(snake.body[0].y == cellCount || snake.body[0].y == -1)
+            if (snake.body[0].x == cellCount || snake.body[0].x == -1 || snake.body[0].y == cellCount || snake.body[0].y == -1)
             {
                 GameOver();
             }
@@ -182,18 +199,28 @@ class Game
 
         void GameOver()
         {
+            if (score > bestScore)  // Update the best score if the current score is higher
+            {
+                bestScore = score;
+            }
+
             snake.Reset();
             food.position = food.GenerateRandomPos(snake.body);
             running = false;
             score = 0;
+            speed = 0.2;
             PlaySound(wallSound);
+            StopMusicStream(backGroundMusic);  // Stop the background music on game over
+
+            gameStarted = false;
+            gamePaused = true;
         }
 
         void CheckCollisionWithTail()
         {
             deque<Vector2> headlessBody = snake.body;
             headlessBody.pop_front();
-            if(ElementInDeque(snake.body[0], headlessBody))
+            if (ElementInDeque(snake.body[0], headlessBody))
             {
                 GameOver();
             }
@@ -205,15 +232,12 @@ int main ()
     cout << "Starting the game ..." << endl;
     InitWindow(2*offset + cellSize*cellCount, 2*offset + cellSize*cellCount, "Retro Snake");
     SetTargetFPS(60);
-
-    // Disable the default Esc key behavior for closing the window
-    SetExitKey(0); // 0 disables the key exit behavior, or you can set it to another key like KEY_Q
+    
+    SetExitKey(0);
 
     Game game = Game();
-    bool gamePaused = true;  // Start the game in a paused state
-    bool gameStarted = false;  // Track if the game has started
 
-    while (WindowShouldClose() == false)
+    while (!WindowShouldClose())
     {
         BeginDrawing();
 
@@ -223,20 +247,35 @@ int main ()
         // Title of the game
         DrawText("Retro Snake", offset - 5, 20, 40, darkGreen);
 
-        // Score (Top right)
-        DrawText(TextFormat("%i", game.score), offset + cellSize * cellCount - 10, 20, 40, darkGreen);
+        // Display Score (Top right)
+        DrawText(TextFormat("Score: %i", game.score), offset + cellSize * cellCount - 110, 10, 25, darkGreen);
+
+        // Display Best Score (Top right)
+        DrawText(TextFormat("Best: %i", game.bestScore), offset + cellSize * cellCount - 110, 40, 25, darkGreen);
+
+        // Update the music stream to keep the background music playing
+        game.UpdateMusic();
 
         // Check for ESC key to toggle pause state during gameplay
-        if (gameStarted && IsKeyPressed(KEY_ESCAPE))
+        if (game.gameStarted && IsKeyPressed(KEY_ESCAPE))
         {
-            gamePaused = !gamePaused;  // Toggle gamePaused state
+            game.gamePaused = !game.gamePaused;  // Toggle gamePaused state
+            
+            if (game.gamePaused)
+            {
+                PauseMusicStream(game.backGroundMusic);  // Pause the music when the game is paused
+            }
+            else
+            {
+                ResumeMusicStream(game.backGroundMusic);  // Resume the music when the game is unpaused
+            }
         }
 
         // Draw the snake and food, regardless of the game state
         game.Draw();
 
         // If game hasn't started yet (initial screen)
-        if (!gameStarted)
+        if (!game.gameStarted)
         {
             // Draw a semi-transparent box for the start message
             DrawRectangle(offset + 20, offset + (cellSize * cellCount) / 2 - 40, cellSize * cellCount - 40, 100, Fade(DARKGRAY, 0.7f));
@@ -247,31 +286,34 @@ int main ()
             // Check if any arrow key is pressed to start the game
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT))
             {
-                gamePaused = false;
-                gameStarted = true;  // Set the game as started
+                game.gamePaused = false;
+                game.gameStarted = true;  // Set the game as started
                 game.running = true;
+
+                PlayMusicStream(game.backGroundMusic);  // Start playing the music when the game starts
             }
         }
-        else if (gamePaused)
+        else if (game.gamePaused)
         {
             // Draw a semi-transparent box for the pause message
             DrawRectangle(offset + 20, offset + (cellSize * cellCount) / 2 - 40, cellSize * cellCount - 40, 100, Fade(DARKGRAY, 0.7f));
             
             // Display pause screen messages inside the box
-            DrawText("Game Paused", offset + 50, offset + (cellSize * cellCount) / 2 - 20, 30, RAYWHITE);  // Display "Game Paused"
-            DrawText("Press any arrow key to resume", offset + 50, offset + (cellSize * cellCount) / 2 + 20, 20, RAYWHITE);  // Display "Press any arrow key to resume"
+            DrawText("Game Paused", offset + 50, offset + (cellSize * cellCount) / 2 - 20, 30, RAYWHITE);
+            DrawText("Press any arrow key to resume", offset + 50, offset + (cellSize * cellCount) / 2 + 20, 20, RAYWHITE);
 
             // Resume the game if any arrow key is pressed
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT))
             {
-                gamePaused = false;
+                game.gamePaused = false;
                 game.running = true;
+                ResumeMusicStream(game.backGroundMusic);  // Resume the music when the game resumes
             }
         }
         else
         {
             // If the game is not paused, update the game
-            if (eventTriggered(0.2))
+            if (eventTriggered(game.speed))
             {
                 game.Update();
             }
@@ -298,7 +340,8 @@ int main ()
         EndDrawing();
     }
 
+    CloseAudioDevice();  // Close the audio device at the end
+
     CloseWindow();
     return 0;
 }
-
