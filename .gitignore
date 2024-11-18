@@ -1,0 +1,64 @@
+# C++ Build Artifacts
+*.o        # Object files
+*.obj      # Object files (Windows)
+*.exe      # Executables
+*.out      # Executables
+*.a        # Static libraries
+*.lib      # Static libraries (Windows)
+*.so       # Shared libraries
+*.dll      # Dynamic libraries (Windows)
+*.dylib    # Dynamic libraries (macOS)
+*.pch      # Precompiled header files
+*.pdb      # Debugging files (Windows)
+
+# Logs and Debug Files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.~*
+
+# macOS Specific
+.DS_Store
+
+# Windows Specific
+Thumbs.db
+Desktop.ini
+
+# IDE/Editor Specific
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains CLion
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Visual Studio
+*.vcxproj*
+*.sln
+*.user
+*.filters
+
+# CMake Generated Files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Temporary Files and Backups
+*.dSYM/     # macOS debug symbols
+*.stackdump # Windows crash reports
+*.core      # Core dump files
+*.ipch      # Precompiled headers (Visual Studio)
+
+# Dependency Management
+*.dep
+*.d
+
+# Ignore Build Directory
+/build/
+bin/
+lib/
